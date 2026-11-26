@@ -1,0 +1,35 @@
+name: Ponder Source RoloPod web build
+
+on:
+  pull_request:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: github.repository == 'pondersource/rolopod'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.47.8'
+          cache: true
+      - run: flutter pub get
+      - run: flutter test --no-pub
+      - run: flutter build web --release --no-pub
+      - name: Verify the hosted entry point and login callback
+        run: |
+          test -s build/web/index.html
+          test -s build/web/flutter_bootstrap.js
+          test -s build/web/redirect.html
+          git rev-parse HEAD > build/web/revision.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rolopod-web
+          path: build/web
+          if-no-files-found: error
